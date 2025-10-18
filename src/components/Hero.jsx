@@ -3,29 +3,36 @@ import { useGSAP } from "@gsap/react";
 // 1. CRITICAL FIX: Import plugins from their specific file paths.
 //    'gsap/all' is not a standard, reliable path for ES modules.
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText"; 
+import { SplitText } from "gsap/SplitText";
+import { useRef } from "react";
+import { useMediaQuery } from "react-responsive";
 
 // 2. Plugin registration is correct
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
 const Hero = () => {
+  const videoRef = useRef();
+
+  const isMobile = useMediaQuery({ maxWidth: 767 });
+
   // 3. Added a ref to the useGSAP dependencies array to run the effect once
   //    after the component mounts and the DOM elements are available.
   useGSAP(() => {
-    
     // SplitText Initialization
     const heroSplit = new SplitText(".title", { type: "chars, words" });
-    
+
     // 4. FIX: Use a more specific selector for the paragraph split
     //    The selector was previously targeting multiple unrelated elements.
-    const paragraphSplit = new SplitText(".view-cocktails .subtitle", { type: "lines" });
+    const paragraphSplit = new SplitText(".view-cocktails .subtitle", {
+      type: "lines",
+    });
 
     // CSS Class Addition
     // This is optional, but ensures the animation elements are styled
     heroSplit.chars.forEach((char) => char.classList.add("text-gradient"));
 
     // Initial (Intro) Animations
-    
+
     // Animate H1 chars
     gsap.from(heroSplit.chars, {
       yPercent: 100,
@@ -55,6 +62,25 @@ const Hero = () => {
       })
       .to(".right-leaf", { y: 200 }, 0)
       .to(".left-leaf", { y: -200 }, 0);
+
+    const startValue = isMobile ? "top 50%" : "center 60%";
+    const endValue = isMobile ? "120% top" : "bottom top";
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: "video",
+        start: startValue,
+        end: endValue,
+        scrub: true,
+        pin: true,
+      },
+    });
+
+    videoRef.current.onloadedmetadata = () => {
+      tl.to(videoRef.current, {
+        currentTime: videoRef.current.duration,
+      });
+    };
   }, []); // Empty dependency array is fine here
 
   return (
@@ -87,6 +113,16 @@ const Hero = () => {
           </div>
         </div>
       </section>
+
+      <div className="video absolute inset-0">
+        <video
+          ref={videoRef}
+          src="/videos/output.mp4"
+          muted
+          playsInline
+          preload="auto"
+        />
+      </div>
     </>
   );
 };
